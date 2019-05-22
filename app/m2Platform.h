@@ -10,7 +10,6 @@
  *
  */
 
-
 #include "application.h"
 
 #define MENU_LANGUAGES 1
@@ -31,12 +30,6 @@ unsigned char menuLanguage;
 // Number of items on one screen
 // Not including title
 #define MENU_LINES 8
-
-//1
-//2-scroll dolu - sipka neni na 1. radku
-//3ok
-//4 posledni scroll dolu blbne
-//5ok
 
 // Symbol which is displayed in front of the selected item
 // This symbol doesn't appear when MENU_LINES == 1
@@ -60,10 +53,6 @@ unsigned char menuLanguage;
 
 // Optional function to write buffer to display - comment if not used
 #define displayDraw()		bc_module_lcd_update()
-
-
-#define MENU_MS_TICK bc_tick_get()
-extern int msTick;
 
 #define BTN_UP 1
 #define BTN_DOWN 2

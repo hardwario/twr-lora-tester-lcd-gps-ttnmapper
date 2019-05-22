@@ -13,9 +13,7 @@
 #ifndef __MENU2__
 #define __MENU2__
 
-
 #include "m2Platform.h"
-
 
 // 0-3 bits
 #define MENU_PARAMETER_MASK 0x0F
@@ -64,7 +62,6 @@ struct SMenu {
 
     MenuItem *items[];
 };
-
 
 int menu2_init(Menu *menu);
 int menu2_event(Menu *menu, uint8_t keyPress);

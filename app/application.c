@@ -35,8 +35,6 @@ bool sleep_active = false;
 bool sleep_gps = false;
 bool sleep_class_c = false;
 
-extern int keyPress;
-
 bool at_send(void);
 bool at_status(void);
 
@@ -66,7 +64,7 @@ char m_battery_str[16] = "";
 
 int lora_port = 2;
 int lora_received = 0;
-int lora_data = 0;
+int lora_tx_packet_length = 1;
 int app_state = 0;
 
 int lora_packet_counter = 0;
@@ -246,7 +244,7 @@ void menu_main_callback(Menu *menu, MenuItem *item)
 
     else if (item == &m_item_gps_info)
     {
-        app_state = 4;
+        app_state = 1;
     }
 
     else if (item == &m_item_sleep)
@@ -257,7 +255,7 @@ void menu_main_callback(Menu *menu, MenuItem *item)
 
 void menu_data_callback(Menu *menu, MenuItem *item)
 {
-    lora_data = (int)item->parameter;
+    lora_tx_packet_length = (int)item->parameter;
     strncpy(m_lora_tx_data_str, item->text[0], sizeof(m_lora_tx_data_str));
 }
 
@@ -328,7 +326,14 @@ void button_event_handler(bc_button_t *self, bc_button_event_t event, void *even
 
     if (self == &button_left && event == BC_BUTTON_EVENT_CLICK)
     {
-        menu2_event(&menu_main, BTN_UP);
+        if (app_state == 1)
+        {
+            app_state = 0;
+        }
+        else
+        {
+            menu2_event(&menu_main, BTN_UP);
+        }
     }
     if (self == &button_left && event == BC_BUTTON_EVENT_HOLD)
     {
@@ -437,7 +442,7 @@ bool at_send(void)
 {
     static uint8_t buffer[230];
 
-    int len = lora_data;
+    int len = lora_tx_packet_length;
 
     if (len > 0 && len <= 230)
     {
@@ -668,7 +673,6 @@ void application_task(void)
         return;
     }
 
-
     bc_system_pll_enable();
 
     switch (app_state)
@@ -679,7 +683,7 @@ void application_task(void)
             break;
         }
 
-        case 4:
+        case 1:
         {
             char gps_buffer[30];
             bc_module_lcd_clear();
@@ -703,11 +707,6 @@ void application_task(void)
             bc_module_lcd_draw_string(0, 65, gps_buffer, 1);
 
             bc_module_lcd_update();
-            if (keyPress == BTN_LEFT)
-            {
-                keyPress = 0;
-                app_state = 0;
-            }
             break;
         }
 
