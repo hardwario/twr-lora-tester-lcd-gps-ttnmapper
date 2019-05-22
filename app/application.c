@@ -324,28 +324,31 @@ void button_event_handler(bc_button_t *self, bc_button_event_t event, void *even
 
     bc_scheduler_plan_now(0);
 
-    if (self == &button_left && event == BC_BUTTON_EVENT_CLICK)
+    // Any event returns from GPS screen to menu
+    if (app_state == 1 && (event == BC_BUTTON_EVENT_CLICK || event == BC_BUTTON_EVENT_HOLD))
     {
-        if (app_state == 1)
-        {
-            app_state = 0;
-        }
-        else
+        app_state = 0;
+        return;
+    }
+
+    if (app_state == 0)
+    {
+        if (self == &button_left && event == BC_BUTTON_EVENT_CLICK)
         {
             menu2_event(&menu_main, BTN_UP);
         }
-    }
-    if (self == &button_left && event == BC_BUTTON_EVENT_HOLD)
-    {
-        menu2_event(&menu_main, BTN_LEFT);
-    }
-    else if (self == &button_right && event == BC_BUTTON_EVENT_CLICK)
-    {
-        menu2_event(&menu_main, BTN_DOWN);
-    }
-    else if (self == &button_right && event == BC_BUTTON_EVENT_HOLD)
-    {
-        menu2_event(&menu_main, BTN_ENTER);
+        if (self == &button_left && event == BC_BUTTON_EVENT_HOLD)
+        {
+            menu2_event(&menu_main, BTN_LEFT);
+        }
+        else if (self == &button_right && event == BC_BUTTON_EVENT_CLICK)
+        {
+            menu2_event(&menu_main, BTN_DOWN);
+        }
+        else if (self == &button_right && event == BC_BUTTON_EVENT_HOLD)
+        {
+            menu2_event(&menu_main, BTN_ENTER);
+        }
     }
 
 
