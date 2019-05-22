@@ -13,7 +13,7 @@
 
 #include "application.h"
 
-#define MENU_LANGUAGES 2
+#define MENU_LANGUAGES 1
 
 // If you use different languages, define them here
 #define LANGUAGE_CZECH 0

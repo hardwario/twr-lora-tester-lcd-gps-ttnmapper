@@ -27,32 +27,27 @@ bc_module_gps_quality_t gps_quality;
 bc_led_t gps_led_r;
 bc_led_t gps_led_g;
 
-
-
 float temperature;
 
 bool lora_send_confimed_message = false;
+
+bool sleep_active = false;
+bool sleep_gps = false;
+bool sleep_class_c = false;
 
 extern int keyPress;
 
 bool at_send(void);
 bool at_status(void);
 
-void callback(void *m);
-void m_cb_lora_send(void *m);
-void m_cb_lora_mode(void *m);
-void m_cb_lora_join(void *m);
-void m_cb_lora_confirmation(void *m);
-void m_cb_lora_port(void *m);
-void m_cb_lora_band(void *m);
-void m_cb_lora_nwk(void *m);
-void m_cb_lora_class(void *m);
-void m_cb_lora_received(void *m);
-void m_cb_datarate(void *m);
-void m_cb_tx_data(void *m);
-void m_cb_gps_info(void *m);
-void m_cb_tx_period(void *m);
+void sleep();
+void wakeup();
 
+void menu_main_callback(Menu *menu, MenuItem *item);
+void menu_data_callback(Menu *menu, MenuItem *item);
+void menu_period_callback(Menu *menu, MenuItem *item);
+void menu_band_callback(Menu *menu, MenuItem *item);
+void menu_datarate_callback(Menu *menu, MenuItem *item);
 
 int msTick = 10;
 
@@ -67,6 +62,7 @@ char m_lora_datarate_str[16] = "";
 char m_lora_tx_data_str[16] = "1B";
 char m_lora_gps_info_str[16] = "??";
 char m_lora_tx_period_str[16] = "off";
+char m_battery_str[16] = "";
 
 int lora_port = 2;
 int lora_received = 0;
@@ -78,91 +74,97 @@ int lora_packet_counter = 0;
 bc_tick_t task_tx_period_delay = 0;
 bc_scheduler_task_id_t task_tx_period_id;
 
+Menu menu_tx_data;
+Menu menu_tx_period;
+Menu menu_band;
+Menu menu_datarate;
+
 // Items
-MenuItem m_item_send = {{"Send"}, m_cb_lora_send, MENU_CALLBACK_IS_FUNCTION | MENU_PARAMETER_IS_STRING, (int)m_lora_send_str};
-MenuItem m_item_tx_data = {{"TX Data"}, m_cb_tx_data, MENU_CALLBACK_IS_FUNCTION | MENU_PARAMETER_IS_STRING, (int)m_lora_tx_data_str};
-MenuItem m_item_tx_period = {{"TX Period"}, m_cb_tx_period, MENU_CALLBACK_IS_FUNCTION | MENU_PARAMETER_IS_STRING, (int)&m_lora_tx_period_str};
-MenuItem m_item_lora_mode = {{"Mode"}, m_cb_lora_mode, MENU_CALLBACK_IS_FUNCTION | MENU_PARAMETER_IS_STRING, (int)m_lora_mode_str};
-MenuItem m_item_join = {{"Join"}, m_cb_lora_join, MENU_CALLBACK_IS_FUNCTION | MENU_PARAMETER_IS_STRING, (int)m_lora_join_str};
-MenuItem m_item_confirmed_chk = {{"Confirmation"}, m_cb_lora_confirmation, MENU_CALLBACK_IS_FUNCTION | MENU_ITEM_IS_CHECKBOX , 0};
-MenuItem m_item_port = {{"Port"}, m_cb_lora_port, MENU_CALLBACK_IS_FUNCTION | MENU_PARAMETER_IS_NUMBER , (int)&lora_port};
-MenuItem m_item_band = {{"Band"}, m_cb_lora_band, MENU_CALLBACK_IS_FUNCTION | MENU_PARAMETER_IS_STRING , (int)&m_lora_band_str};
-MenuItem m_item_datarate = {{"Datarate"}, m_cb_datarate, MENU_CALLBACK_IS_FUNCTION | MENU_PARAMETER_IS_STRING , (int)&m_lora_datarate_str};
-MenuItem m_item_nwk = {{"Network"}, m_cb_lora_nwk, MENU_CALLBACK_IS_FUNCTION | MENU_PARAMETER_IS_STRING, (int)&m_lora_nwk_str};
-MenuItem m_item_class = {{"Class"}, m_cb_lora_class, MENU_CALLBACK_IS_FUNCTION | MENU_PARAMETER_IS_STRING, (int)&m_lora_class_str};
-MenuItem m_item_received = {{"Received"}, m_cb_lora_received, MENU_CALLBACK_IS_FUNCTION | MENU_PARAMETER_IS_NUMBER, (int)&lora_received};
-MenuItem m_item_rx_data = {{"RX"}, 0, MENU_PARAMETER_IS_STRING, (int)&m_lora_received_str};
-MenuItem m_item_gps_info = {{"GPS Info"}, m_cb_gps_info, MENU_CALLBACK_IS_FUNCTION | MENU_PARAMETER_IS_STRING, (int)&m_lora_gps_info_str};
+MenuItem m_item_send = {{"Send"}, NULL, MENU_PARAMETER_IS_STRING, (void*)m_lora_send_str};
+MenuItem m_item_tx_data = {{"TX Data"}, &menu_tx_data,  MENU_PARAMETER_IS_STRING, (void*)m_lora_tx_data_str};
+MenuItem m_item_tx_period = {{"TX Period"}, &menu_tx_period,  MENU_PARAMETER_IS_STRING, (void*)&m_lora_tx_period_str};
+MenuItem m_item_lora_mode = {{"Mode"}, NULL,  MENU_PARAMETER_IS_STRING, (void*)m_lora_mode_str};
+MenuItem m_item_join = {{"Join"}, NULL,  MENU_PARAMETER_IS_STRING, (void*)m_lora_join_str};
+MenuItem m_item_confirmed_chk = {{"Confirmation"}, NULL,  MENU_ITEM_IS_CHECKBOX , 0};
+MenuItem m_item_port = {{"Port"}, NULL,  MENU_PARAMETER_IS_NUMBER , (void*)&lora_port};
+MenuItem m_item_band = {{"Band"}, &menu_band,  MENU_PARAMETER_IS_STRING , (void*)&m_lora_band_str};
+MenuItem m_item_datarate = {{"Datarate"}, &menu_datarate,  MENU_PARAMETER_IS_STRING , (void*)&m_lora_datarate_str};
+MenuItem m_item_nwk = {{"Network"}, NULL,  MENU_PARAMETER_IS_STRING, (void*)&m_lora_nwk_str};
+MenuItem m_item_class = {{"Class"}, NULL,  MENU_PARAMETER_IS_STRING, (void*)&m_lora_class_str};
+MenuItem m_item_received = {{"Received"}, NULL,  MENU_PARAMETER_IS_NUMBER, (void*)&lora_received};
+MenuItem m_item_rx_data = {{"RX"}, NULL, MENU_PARAMETER_IS_STRING, (void*)&m_lora_received_str};
+MenuItem m_item_gps_info = {{"GPS Info"}, NULL, MENU_PARAMETER_IS_STRING, (void*)&m_lora_gps_info_str};
+MenuItem m_item_battery = {{"Battery"}, NULL, MENU_PARAMETER_IS_STRING, (void*)&m_battery_str};
+MenuItem m_item_sleep = {{"Sleep"}, NULL, NULL, NULL};
 
 Menu menu_main = {
     {"BigClown LoRa v1.0"},
-    .items = {&m_item_send, &m_item_tx_data, &m_item_tx_period, &m_item_gps_info, &m_item_lora_mode, &m_item_join, &m_item_confirmed_chk, &m_item_port, &m_item_band, &m_item_datarate, &m_item_nwk, &m_item_class, &m_item_received, &m_item_rx_data, 0},
-    .refresh = 200
+    .items = {&m_item_send, &m_item_tx_data, &m_item_tx_period, &m_item_gps_info, &m_item_lora_mode, &m_item_join, &m_item_confirmed_chk, &m_item_port, &m_item_band, &m_item_datarate, &m_item_nwk, &m_item_class, &m_item_received, &m_item_rx_data, &m_item_battery, &m_item_sleep, 0},
+    .refresh = 200,
+    .callback = menu_main_callback
 };
 
-MenuItem m_band_as923 = {{"AS923"}, 0, 0, 0}; // 0
-MenuItem m_band_au915 = {{"AU915"}, 0, 0, 0}; // 1
-MenuItem m_band_eu868 = {{"EU868"}, 0, 0, 0}; // 5
-MenuItem m_band_kr920 = {{"KR920"}, 0, 0, 0}; // 6
-MenuItem m_band_in865 = {{"IN865"}, 0, 0, 0}; // 7
-MenuItem m_band_us915 = {{"US915"}, 0, 0, 0}; // 8
+MenuItem m_band_as923 = {{"AS923"}, 0, 0, (void*)0}; // 0
+MenuItem m_band_au915 = {{"AU915"}, 0, 0, (void*)1}; // 1
+MenuItem m_band_eu868 = {{"EU868"}, 0, 0, (void*)5}; // 5
+MenuItem m_band_kr920 = {{"KR920"}, 0, 0, (void*)6}; // 6
+MenuItem m_band_in865 = {{"IN865"}, 0, 0, (void*)7}; // 7
+MenuItem m_band_us915 = {{"US915"}, 0, 0, (void*)8}; // 8
 
 Menu menu_band = {
     {"Band"},
     .items = {&m_band_as923, &m_band_au915, &m_band_eu868, &m_band_kr920, &m_band_in865, &m_band_us915, 0},
-    .refresh = 200
+    .refresh = 200,
+    .callback = menu_band_callback
 };
 
-MenuItem m_datarate_0 = {{"SF12/125kHz"}, 0, 0, 0}; // 0
-MenuItem m_datarate_1 = {{"SF11/125kHz"}, 0, 0, 0}; // 1
-MenuItem m_datarate_2 = {{"SF10/125kHz"}, 0, 0, 0}; // 5
-MenuItem m_datarate_3 = {{"SF9/125kHz"}, 0, 0, 0}; // 6
-MenuItem m_datarate_4 = {{"SF8/125kHz"}, 0, 0, 0}; // 7
-MenuItem m_datarate_5 = {{"SF7/125kHz"}, 0, 0, 0}; // 8
-MenuItem m_datarate_6 = {{"SF7/250kHz"}, 0, 0, 0}; // 8
-MenuItem m_datarate_7 = {{"FSK 50kbit"}, 0, 0, 0}; // 8
-
+MenuItem m_datarate_0 = {{"SF12/125kHz"}, 0, 0, (void*)0};
+MenuItem m_datarate_1 = {{"SF11/125kHz"}, 0, 0, (void*)1};
+MenuItem m_datarate_2 = {{"SF10/125kHz"}, 0, 0, (void*)2};
+MenuItem m_datarate_3 = {{"SF9/125kHz"}, 0, 0, (void*)3};
+MenuItem m_datarate_4 = {{"SF8/125kHz"}, 0, 0, (void*)4};
+MenuItem m_datarate_5 = {{"SF7/125kHz"}, 0, 0, (void*)5};
+MenuItem m_datarate_6 = {{"SF7/250kHz"}, 0, 0, (void*)6};
+MenuItem m_datarate_7 = {{"FSK 50kbit"}, 0, 0, (void*)7};
 
 Menu menu_datarate = {
     {"Datarate"},
     .items = {&m_datarate_0, &m_datarate_1, &m_datarate_2, &m_datarate_3, &m_datarate_4, &m_datarate_5, &m_datarate_6, &m_datarate_7, 0},
-    .refresh = 200
+    .refresh = 200,
+    .callback = menu_datarate_callback
 };
 
-
-MenuItem m_data_0 = {{"1 B"}, 0, 0, 0};
-MenuItem m_data_1 = {{"25 B"}, 0, 0, 0};
-MenuItem m_data_2 = {{"50 B"}, 0, 0, 0};
-MenuItem m_data_3 = {{"123 B"}, 0, 0, 0};
-MenuItem m_data_4 = {{"230 B"}, 0, 0, 0};
-MenuItem m_data_5 = {{"GPS,Temp"}, 0, 0, 0};
+MenuItem m_data_0 = {{"1 B"}, 0, 0, (void*)1};
+MenuItem m_data_1 = {{"25 B"}, 0, 0, (void*)25};
+MenuItem m_data_2 = {{"50 B"}, 0, 0, (void*)50};
+MenuItem m_data_3 = {{"123 B"}, 0, 0, (void*)123};
+MenuItem m_data_4 = {{"230 B"}, 0, 0, (void*)230};
+MenuItem m_data_5 = {{"GPS,Temp"}, 0, 0, (void*)250};
 
 Menu menu_tx_data = {
     {"TX data"},
     .items = {&m_data_0, &m_data_1, &m_data_2, &m_data_3, &m_data_4, &m_data_5, 0},
-    .refresh = 200
+    .refresh = 200,
+    .callback = menu_data_callback
 };
-static const uint8_t tx_data_lookup_table[] = {1, 25, 50, 123, 230, 250};
 
-
-MenuItem m_periodic_0 = {{"off"}, 0, 0, 0};
-MenuItem m_periodic_1 = {{"5 s"}, 0, 0, 0};
-MenuItem m_periodic_2 = {{"10 s"}, 0, 0, 0};
-MenuItem m_periodic_3 = {{"15 s"}, 0, 0, 0};
-MenuItem m_periodic_4 = {{"30 s"}, 0, 0, 0};
-MenuItem m_periodic_5 = {{"1 min"}, 0, 0, 0};
-MenuItem m_periodic_6 = {{"5 min"}, 0, 0, 0};
-MenuItem m_periodic_7 = {{"10 min"}, 0, 0, 0};
-MenuItem m_periodic_8 = {{"20 min"}, 0, 0, 0};
-MenuItem m_periodic_9 = {{"60 min"}, 0, 0, 0};
+MenuItem m_periodic_0 = {{"off"}, 0, 0, (void*)0};
+MenuItem m_periodic_1 = {{"5 s"}, 0, 0, (void*)(5 * 1000)};
+MenuItem m_periodic_2 = {{"10 s"}, 0, 0,(void*)(10 * 1000)};
+MenuItem m_periodic_3 = {{"15 s"}, 0, 0, (void*)(15 * 1000)};
+MenuItem m_periodic_4 = {{"30 s"}, 0, 0, (void*)(30 * 1000)};
+MenuItem m_periodic_5 = {{"1 min"}, 0, 0, (void*)(60 * 1000)};
+MenuItem m_periodic_6 = {{"5 min"}, 0, 0, (void*)(5 * 60 * 1000)};
+MenuItem m_periodic_7 = {{"10 min"}, 0, 0, (void*)(10 * 60 * 1000)};
+MenuItem m_periodic_8 = {{"20 min"}, 0, 0, (void*)(20 * 60 * 1000)};
+MenuItem m_periodic_9 = {{"60 min"}, 0, 0, (void*)(60 * 60 * 1000)};
 
 Menu menu_tx_period = {
     {"TX period"},
     .items = {&m_periodic_0, &m_periodic_1, &m_periodic_2, &m_periodic_3, &m_periodic_4, &m_periodic_5, &m_periodic_6, &m_periodic_7, &m_periodic_8, &m_periodic_9, 0},
-    .refresh = 200
+    .refresh = 200,
+    .callback = menu_period_callback
 };
-static const uint32_t tx_period_lookup_table[] = {0, 5 * 1000, 10 * 1000, 15 * 1000, 30 * 1000, 60 * 1000, 5 * 60 * 1000, 10 * 60 * 1000, 20 * 60 * 1000, 60 * 60 * 1000 };
-
 
 void lcdBufferString(char *str, int x, int y)
 {
@@ -176,157 +178,171 @@ void lcdBufferNumber(int number, int x, int y)
     bc_module_lcd_draw_string(x, y, str, 1);
 }
 
-// Callback
-void callback(void *m)
+void menu_main_callback(Menu *menu, MenuItem *item)
 {
-    Menu* menu = ((Menu*)m);
-    MenuItem *selectedItem = menu->items[menu->selectedIndex];
-    (void) selectedItem;
-}
-
-// Callback
-void m_cb_lora_send(void *m)
-{
-    Menu* menu = ((Menu*)m);
-    MenuItem *selectedItem = menu->items[menu->selectedIndex];
-    (void) selectedItem;
-    at_send();
-}
-
-// Callback
-void m_cb_lora_mode(void *m)
-{
-    Menu* menu = ((Menu*)m);
-    MenuItem *selectedItem = menu->items[menu->selectedIndex];
-    (void) selectedItem;
-
-    if (bc_cmwx1zzabz_get_mode(&lora) == BC_CMWX1ZZABZ_CONFIG_MODE_ABP)
+    if (item == &m_item_send)
     {
-        bc_cmwx1zzabz_set_mode(&lora, BC_CMWX1ZZABZ_CONFIG_MODE_OTAA);
-        strcpy(m_lora_mode_str, "OTAA");
-    }
-    else
-    {
-        bc_cmwx1zzabz_set_mode(&lora, BC_CMWX1ZZABZ_CONFIG_MODE_ABP);
-        strcpy(m_lora_mode_str, "ABP");
-    }
-}
-
-void m_cb_lora_join(void *m)
-{
-    (void) m;
-    bc_cmwx1zzabz_join(&lora);
-}
-
-void m_cb_lora_confirmation(void *m)
-{
-    Menu* menu = ((Menu*)m);
-    MenuItem *selectedItem = menu->items[menu->selectedIndex];
-
-    lora_send_confimed_message = (selectedItem->flags & MENU_ITEM_IS_CHECKED) ? true : false;
-}
-
-void m_cb_lora_port(void *m)
-{
-    (void) m;
-
-    lora_port++;
-
-    if (lora_port == 5)
-    {
-        lora_port = 0;
+        at_send();
     }
 
-    bc_cmwx1zzabz_set_port(&lora, lora_port);
-}
-
-void m_cb_lora_band(void *m)
-{
-    // Band menu
-    app_state = 1;
-    menu2_init(&menu_band);
-}
-
-void m_cb_lora_nwk(void *m)
-{
-    uint8_t public = bc_cmwx1zzabz_get_nwk_public(&lora);
-    if (public)
+    else if (item == &m_item_lora_mode)
     {
-        bc_cmwx1zzabz_set_nwk_public(&lora, 0);
+        if (bc_cmwx1zzabz_get_mode(&lora) == BC_CMWX1ZZABZ_CONFIG_MODE_ABP)
+        {
+            bc_cmwx1zzabz_set_mode(&lora, BC_CMWX1ZZABZ_CONFIG_MODE_OTAA);
+            strcpy(m_lora_mode_str, "OTAA");
+        }
+        else
+        {
+            bc_cmwx1zzabz_set_mode(&lora, BC_CMWX1ZZABZ_CONFIG_MODE_ABP);
+            strcpy(m_lora_mode_str, "ABP");
+        }
     }
-    else
+
+    else if (item == &m_item_join)
     {
-        bc_cmwx1zzabz_set_nwk_public(&lora, 1);
+        bc_cmwx1zzabz_join(&lora);
     }
-    // GUI parameter is updated in ready event handler
+
+    else if (item == &m_item_confirmed_chk)
+    {
+        lora_send_confimed_message = (item->flags & MENU_ITEM_IS_CHECKED) ? true : false;
+    }
+
+    else if (item == &m_item_port)
+    {
+        lora_port++;
+        if (lora_port == 5)
+        {
+            lora_port = 0;
+        }
+        bc_cmwx1zzabz_set_port(&lora, lora_port);
+    }
+
+    else if (item == &m_item_confirmed_chk)
+    {
+        lora_send_confimed_message = (item->flags & MENU_ITEM_IS_CHECKED) ? true : false;
+    }
+
+    else if (item == &m_item_nwk)
+    {
+        uint8_t public = bc_cmwx1zzabz_get_nwk_public(&lora);
+        bc_cmwx1zzabz_set_nwk_public(&lora, public ? 0 : 1);
+    }
+
+    else if (item == &m_item_class)
+    {
+        bc_cmwx1zzabz_config_class_t class = bc_cmwx1zzabz_get_class(&lora);
+        bc_cmwx1zzabz_set_class(&lora, (class == BC_CMWX1ZZABZ_CONFIG_CLASS_A) ? BC_CMWX1ZZABZ_CONFIG_CLASS_C : BC_CMWX1ZZABZ_CONFIG_CLASS_A);
+
+        class = bc_cmwx1zzabz_get_class(&lora);
+        sleep_class_c = class == BC_CMWX1ZZABZ_CONFIG_CLASS_C;
+    }
+
+    else if (item == &m_item_received)
+    {
+        lora_received = 0;
+    }
+
+    else if (item == &m_item_gps_info)
+    {
+        app_state = 4;
+    }
+
+    else if (item == &m_item_sleep)
+    {
+        sleep();
+    }
 }
 
-void m_cb_lora_class(void *m)
+void menu_data_callback(Menu *menu, MenuItem *item)
 {
-    bc_cmwx1zzabz_config_class_t class = bc_cmwx1zzabz_get_class(&lora);
+    lora_data = (int)item->parameter;
+    strncpy(m_lora_tx_data_str, item->text[0], sizeof(m_lora_tx_data_str));
+}
 
-    if (class == BC_CMWX1ZZABZ_CONFIG_CLASS_A)
+void menu_period_callback(Menu *menu, MenuItem *item)
+{
+    task_tx_period_delay = (int)item->parameter;
+    strncpy(m_lora_tx_period_str, item->text[0], sizeof(m_lora_tx_period_str));
+    bc_scheduler_plan_relative(task_tx_period_id, task_tx_period_delay ? task_tx_period_delay : BC_TICK_INFINITY);
+}
+
+void menu_band_callback(Menu *menu, MenuItem *item)
+{
+    int band = (int)item->parameter;
+    strncpy(m_lora_band_str, item->text[0], sizeof(m_lora_band_str));
+    bc_cmwx1zzabz_set_band(&lora, band);
+}
+
+void menu_datarate_callback(Menu *menu, MenuItem *item)
+{
+    int datarate = (int)item->parameter;
+    strncpy(m_lora_datarate_str, item->text[0], sizeof(m_lora_datarate_str));
+    bc_cmwx1zzabz_set_datarate(&lora, datarate);
+}
+
+void sleep()
+{
+    bc_cmwx1zzabz_set_class(&lora, BC_CMWX1ZZABZ_CONFIG_CLASS_A);
+    bc_module_gps_stop();
+    bc_module_lcd_clear();
+    bc_module_lcd_update();
+    sleep_active = true;
+    // Disable applicatin_task
+    bc_scheduler_plan_absolute(0, BC_TICK_INFINITY);
+}
+
+void wakeup()
+{
+    if (sleep_class_c)
     {
         bc_cmwx1zzabz_set_class(&lora, BC_CMWX1ZZABZ_CONFIG_CLASS_C);
-
     }
-    else
+    if (sleep_gps)
     {
-        bc_cmwx1zzabz_set_class(&lora, BC_CMWX1ZZABZ_CONFIG_CLASS_A);
+        bc_module_gps_start();
     }
-}
-
-void m_cb_lora_received(void *m)
-{
-    // Clear counter of received messages
-    lora_received = 0;
-}
-
-void m_cb_datarate(void *m)
-{
-    app_state = 2;
-    menu2_init(&menu_datarate);
-}
-
-void m_cb_tx_data(void *m)
-{
-    app_state = 3;
-    menu2_init(&menu_tx_data);
-}
-
-void m_cb_gps_info(void *m)
-{
-    app_state = 4;
-}
-
-void m_cb_tx_period(void *m)
-{
-    app_state = 5;
-    menu2_init(&menu_tx_period);
+    app_state = 0;
+    sleep_active = false;
+    bc_scheduler_plan_now(0);
 }
 
 void button_event_handler(bc_button_t *self, bc_button_event_t event, void *event_param)
 {
     (void) self;
 
+    if (sleep_active)
+    {
+        if (self == &button_left && event == BC_BUTTON_EVENT_HOLD)
+        {
+            wakeup();
+        }
+        else
+        {
+            return;
+        }
+    }
+
     bc_scheduler_plan_now(0);
 
     if (self == &button_left && event == BC_BUTTON_EVENT_CLICK)
     {
-        keyPress = BTN_UP;
+        menu2_event(&menu_main, BTN_UP);
     }
     if (self == &button_left && event == BC_BUTTON_EVENT_HOLD)
     {
-        keyPress = BTN_LEFT;
+        menu2_event(&menu_main, BTN_LEFT);
     }
     else if (self == &button_right && event == BC_BUTTON_EVENT_CLICK)
     {
-        keyPress = BTN_DOWN;
+        menu2_event(&menu_main, BTN_DOWN);
     }
     else if (self == &button_right && event == BC_BUTTON_EVENT_HOLD)
     {
-        keyPress = BTN_ENTER;
+        menu2_event(&menu_main, BTN_ENTER);
     }
+
 
 }
 
@@ -421,7 +437,7 @@ bool at_send(void)
 {
     static uint8_t buffer[230];
 
-    int len = tx_data_lookup_table[lora_data];
+    int len = lora_data;
 
     if (len > 0 && len <= 230)
     {
@@ -526,6 +542,22 @@ void gps_module_event_handler(bc_module_gps_event_t event, void *event_param)
     }
 }
 
+void battery_event_handler(bc_module_battery_event_t event, void *event_param)
+{
+    (void) event_param;
+
+    float voltage;
+
+    if (event == BC_MODULE_BATTERY_EVENT_UPDATE)
+    {
+        if (bc_module_battery_get_voltage(&voltage))
+        {
+            snprintf(m_battery_str, sizeof(m_battery_str), "%02.1f V", voltage);
+        }
+    }
+}
+
+
 void task_tx_periodic(void *param)
 {
     (void) param;
@@ -553,6 +585,11 @@ void application_init(void)
     bc_button_init(&button, BC_GPIO_BUTTON, BC_GPIO_PULL_DOWN, false);
     bc_button_set_event_handler(&button, button_event_handler, NULL);
 
+    // Initialize battery
+    bc_module_battery_init();
+    bc_module_battery_set_event_handler(battery_event_handler, NULL);
+    bc_module_battery_set_update_interval(5 * 60 * 1000);
+
     // Initialize thermometer
     bc_tmp112_init(&tmp112, BC_I2C_I2C0, 0x49);
     bc_tmp112_set_event_handler(&tmp112, tmp112_event_handler, NULL);
@@ -567,6 +604,7 @@ void application_init(void)
     {
         bc_module_gps_set_event_handler(gps_module_event_handler, NULL);
         bc_module_gps_start();
+        sleep_gps = true;
     }
 
     bc_led_init_virtual(&gps_led_r, BC_MODULE_GPS_LED_RED, bc_module_gps_get_led_driver(), 0);
@@ -611,6 +649,10 @@ void application_init(void)
     task_tx_period_id = bc_scheduler_register(task_tx_periodic, 0, BC_TICK_INFINITY);
 
     menu2_init(&menu_main);
+    menu2_init(&menu_tx_data);
+    menu2_init(&menu_tx_period);
+    menu2_init(&menu_band);
+    menu2_init(&menu_datarate);
 }
 
 void application_task(void)
@@ -621,7 +663,11 @@ void application_task(void)
         return;
     }
 
-    msTick = bc_tick_get() / 500;
+    if(sleep_active)
+    {
+        return;
+    }
+
 
     bc_system_pll_enable();
 
@@ -629,70 +675,10 @@ void application_task(void)
     {
         case 0:
         {
-            menu2(&menu_main);
+            menu2_draw(&menu_main);
             break;
         }
 
-        case 1:
-        {
-            int ret = menu2(&menu_band);
-            if (ret == -2)
-            {
-                // Go back
-                app_state = 0;
-                break;
-            }
-            int band_lora_index;
-            if (ret >= 0)
-            {
-                band_lora_index = ret;
-                if (band_lora_index > 1)
-                {
-                    // skip 3 unused bands
-                    band_lora_index += 3;
-                }
-                strcpy(m_lora_band_str, menu_band.items[ret]->text[0]);
-                bc_cmwx1zzabz_set_band(&lora, band_lora_index);
-                app_state = 0;
-            }
-            break;
-        }
-
-        // Datarate
-        case 2:
-        {
-            int datarate = menu2(&menu_datarate);
-            if (datarate == -2)
-            {
-                // Go back
-                app_state = 0;
-                break;
-            }
-            if (datarate >= 0)
-            {
-                strcpy(m_lora_datarate_str, menu_datarate.items[datarate]->text[0]);
-                bc_cmwx1zzabz_set_datarate(&lora, datarate);
-                app_state = 0;
-            }
-            break;
-        }
-        case 3:
-        {
-            int tx_data = menu2(&menu_tx_data);
-            if (tx_data == -2)
-            {
-                // Go back
-                app_state = 0;
-                break;
-            }
-            if (tx_data >= 0)
-            {
-                lora_data = tx_data;
-                strcpy(m_lora_tx_data_str, menu_tx_data.items[tx_data]->text[0]);
-                app_state = 0;
-            }
-            break;
-        }
         case 4:
         {
             char gps_buffer[30];
@@ -707,7 +693,6 @@ void application_task(void)
             snprintf(gps_buffer, sizeof(gps_buffer), "Lat: %03.5f", gps_position.latitude);
             bc_module_lcd_draw_string(0, 26, gps_buffer, 1);
 
-
             snprintf(gps_buffer, sizeof(gps_buffer),"Lon: %03.5f", gps_position.longitude);
             bc_module_lcd_draw_string(0, 39, gps_buffer, 1);
 
@@ -720,35 +705,8 @@ void application_task(void)
             bc_module_lcd_update();
             if (keyPress == BTN_LEFT)
             {
+                keyPress = 0;
                 app_state = 0;
-            }
-            break;
-        }
-
-        case 5:
-        {
-            int tx_period = menu2(&menu_tx_period);
-            if (tx_period == -2)
-            {
-                // Go back
-                app_state = 0;
-                break;
-            }
-            if (tx_period >= 0)
-            {
-                task_tx_period_delay = tx_period_lookup_table[tx_period];
-                strcpy(m_lora_tx_period_str, menu_tx_period.items[tx_period]->text[0]);
-                app_state = 0;
-
-                if (task_tx_period_delay)
-                {
-                    bc_scheduler_plan_relative(task_tx_period_id, 1000);
-                }
-                else
-                {
-                    bc_scheduler_plan_relative(task_tx_period_id, BC_TICK_INFINITY);
-                }
-
             }
             break;
         }
@@ -761,6 +719,6 @@ void application_task(void)
 
     bc_system_pll_disable();
 
-    bc_scheduler_plan_current_relative(2000);
+    bc_scheduler_plan_current_relative(200);
 
 }

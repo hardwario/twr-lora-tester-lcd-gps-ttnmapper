@@ -25,6 +25,9 @@ int menu2_init(Menu *menu)
 	for (; *iList != 0; ++iList)
 	  menu->len++;
 
+    menu->menu_next = NULL;
+    menu->menu_previous = NULL;
+
 /*
     bc_module_lcd_draw_string(10, 10, "xxx", 1);
 
@@ -51,13 +54,13 @@ int menu2_init(Menu *menu)
     return 0;
 }
 
-int menu2(Menu *menu)
+int menu2_event(Menu *menu, uint8_t keyPress)
 {
-	int i = 0;
-	displayClear();
+    while(menu->menu_next)
     {
+        menu = menu->menu_next;
+    }
 
-		if(keyPress) {
 
 		  //
 		  // Down
@@ -134,6 +137,22 @@ int menu2(Menu *menu)
 				menu->lastMenuItem = -1;
 			}
 
+            MenuItem *item = menu->items[menu->selectedIndex];
+            menu->callback(menu, item);
+
+            if (item->submenu)
+            {
+                Menu *next = menu->menu_next = item->submenu;
+                next->menu_previous = menu;
+            }
+            else
+            {
+                // Move back to previous parent menu
+                Menu *prev = menu->menu_previous;
+                prev->menu_next = NULL;
+            }
+
+/*
 			// Item is submenu - parameter in callback
 			if(flags & MENU_CALLBACK_IS_SUBMENU && menu->items[menu->selectedIndex]->callback)
 			{
@@ -154,7 +173,7 @@ int menu2(Menu *menu)
 			if((menu->items[menu->selectedIndex]->callback == 0) && ((flags & MENU_ITEM_IS_CHECKBOX) == 0))
 			{
 				return menu->menuItem;
-			}
+			}*/
 
 		  }
 
@@ -166,20 +185,38 @@ int menu2(Menu *menu)
 		  {
 			keyPress = 0;
 			menu->selectedIndex = 0;
+
+            if (menu->menu_previous)
+            {
+                Menu *p = menu->menu_previous;
+                p->menu_next = NULL;
+            }
+
 					return -2;
 		  }
 
-				keyPress = 0;
 
-			} // if(keyPress)
+}
+
+int menu2_draw(Menu *menu)
+{
+
+    while(menu->menu_next)
+    {
+        menu = menu->menu_next;
+    }
+
+	int i = 0;
+    //displayClear();
+    {
 
 		//
 		// If menu item changed -> refresh screen
 		//
-		if(menu->lastMenuItem != menu->menuItem || (menu->refresh && MENU_MS_TICK > menu->refreshTimer))
+		//if(menu->lastMenuItem != menu->menuItem || (menu->refresh && MENU_MS_TICK > menu->refreshTimer))
 		{
-			if(menu->refresh)
-				 menu->refreshTimer = MENU_MS_TICK + menu->refresh;
+			/*if(menu->refresh)
+				 menu->refreshTimer = MENU_MS_TICK + menu->refresh;*/
 
 		  displayClear();
 		  displayString(menu->title[menuLanguage],0,0);

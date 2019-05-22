@@ -33,17 +33,17 @@
 // 7bit - callback bit
 #define MENU_CALLBACK_IS_FUNCTION 0x80
 
+typedef struct SMenuItem MenuItem;
+typedef struct SMenu Menu;
 
-
-typedef struct SMenuItem {
+struct SMenuItem {
 	char* text[MENU_LANGUAGES];
-	void (*callback)(void *);
+	struct Menu *submenu;
 	int flags;
-	int parameter;
-} MenuItem;
+	void *parameter;
+};
 
-
-typedef struct SMenu {
+struct SMenu {
 	char* title[MENU_LANGUAGES];
 	int selectedIndex;
 	int refresh;
@@ -57,12 +57,17 @@ typedef struct SMenu {
     int len;
     bc_tick_t refreshTimer;
 
+    void (*callback)(Menu*, MenuItem*);
+
+    struct Menu *menu_previous;
+    struct Menu *menu_next;
+
     MenuItem *items[];
-} Menu;
+};
 
 
 int menu2_init(Menu *menu);
-
-int menu2(Menu *menu);
+int menu2_event(Menu *menu, uint8_t keyPress);
+int menu2_draw(Menu *menu);
 
 #endif
