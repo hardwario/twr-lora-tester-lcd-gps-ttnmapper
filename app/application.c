@@ -200,6 +200,7 @@ void menu_main_callback(Menu *menu, MenuItem *item)
     else if (item == &m_item_join)
     {
         bc_cmwx1zzabz_join(&lora);
+        strcpy(m_lora_join_str, "Joining...");
     }
 
     else if (item == &m_item_confirmed_chk)
