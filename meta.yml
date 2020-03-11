@@ -1,0 +1,16 @@
+#article: https://www.bigclown.com/doc/projects/radio-co2-monitor/
+video: https://www.youtube.com/watch?v=6OqiaGktaKk&feature=emb_title
+images:
+  - title:
+    url: https://github.com/hardwario/website/blob/master/static/kits-images/lora-tester-kit/main.png
+articles:
+  - title: LoRa Tester with LCD & GPS - Open, Configurable, Low-Power
+    url: https://www.hackster.io/160709/lora-tester-with-lcd-gps-open-configurable-low-power-4a5b61
+    description: Fully configurable battery-operated LoRa tester with HARDWARIO Maker Kit. You can configure every LoRa parameter and use GPS with TTN Mapper
+    images:
+      - url: https://hackster.imgix.net/uploads/attachments/927706/main_image_cZlADWay9W.png?auto=compress%2Cformat&w=900&h=675&fit=min
+assembly:
+  - name: HARDWARIO Core Module
+  - name: HARDWARIO Battery Module
+  - name: HARDWARIO GPS Module
+  - name: HARDWARIO LoRa Module

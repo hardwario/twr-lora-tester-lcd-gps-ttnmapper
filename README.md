@@ -1,14 +1,17 @@
-<a href="https://www.bigclown.com/"><img src="https://bigclown.sirv.com/logo.png" width="200" alt="BigClown Logo" align="right"></a>
+<a href="https://www.hardwario.com/"><img src="https://www.hardwario.com/ci/assets/hw-logo.svg" width="200" alt="HARDWARIO Logo" align="right"></a>
 
 # LoRa Tester with LCD Module, GPS for TTN Mapper
 
+[![Travis](https://img.shields.io/travis/bigclownprojects/bcf-lora-tester-lcd-gps-ttnmapper/master.svg)](https://travis-ci.org/bigclownprojects/bcf-lora-tester-lcd-gps-ttnmapper)
+[![Release](https://img.shields.io/github/release/bigclownprojects/bcf-lora-tester-lcd-gps-ttnmapper.svg)](https://github.com/bigclownprojects/bcf-lora-tester-lcd-gps-ttnmapper/releases)
+[![License](https://img.shields.io/github/license/bigclownprojects/bcf-lora-tester-lcd-gps-ttnmapper.svg)](https://github.com/bigclownprojects/bcf-lora-tester-lcd-gps-ttnmapper/blob/master/LICENSE)
+[![Twitter](https://img.shields.io/twitter/follow/hardwario_en.svg?style=social&label=Follow)](https://twitter.com/hardwario_en)
+
 If you want to get more information about Core Module, firmware and how to work with it, please follow this link:
 
-**https://www.bigclown.com/doc/firmware/basic-overview/**
+**https://developers.hardwario.com/firmware/basic-overview/**
 
 User's application code (business logic) goes into `app/application.c`.
-The default content works as a *Hello World* example.
-When flashed into Core Module, it toggles LED state with each button press.
 
 ## License
 
