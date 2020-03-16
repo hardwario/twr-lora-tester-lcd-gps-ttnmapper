@@ -2,7 +2,7 @@
 video: https://www.youtube.com/watch?v=6OqiaGktaKk&feature=emb_title
 images:
   - title:
-    url: https://github.com/hardwario/website/blob/master/static/kits-images/lora-tester-kit/main.png
+    url: https://raw.githubusercontent.com/hardwario/website/master/static/kits-images/lora-tester-kit/main.png
 articles:
   - title: LoRa Tester with LCD & GPS - Open, Configurable, Low-Power
     url: https://www.hackster.io/160709/lora-tester-with-lcd-gps-open-configurable-low-power-4a5b61
