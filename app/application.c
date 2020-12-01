@@ -96,7 +96,7 @@ MenuItem m_item_battery = {{"Battery"}, NULL, MENU_PARAMETER_IS_STRING, (void*)&
 MenuItem m_item_sleep = {{"Sleep"}, NULL, NULL, NULL};
 
 Menu menu_main = {
-    {"BigClown LoRa v1.0"},
+    {"HARDWARIO LoRa v1.0"},
     .items = {&m_item_send, &m_item_tx_data, &m_item_tx_period, &m_item_gps_info, &m_item_lora_mode, &m_item_join, &m_item_confirmed_chk, &m_item_port, &m_item_band, &m_item_datarate, &m_item_nwk, &m_item_class, &m_item_received, &m_item_rx_data, &m_item_battery, &m_item_sleep, 0},
     .refresh = 200,
     .callback = menu_main_callback
