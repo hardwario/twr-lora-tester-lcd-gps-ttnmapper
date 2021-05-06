@@ -39,7 +39,7 @@ unsigned char menuLanguage;
 #define ARROW_GAP 2
 
 // Clear display
-#define displayClear()	bc_module_lcd_clear()
+#define displayClear()	twr_module_lcd_clear()
 
 // Display string
 #define displayString(str, posx, posy) lcdBufferString(str, posx, posy)
@@ -52,7 +52,7 @@ unsigned char menuLanguage;
 //#define displayNumber(str, posx, posy) {lcdGotoXY(posx, posy); lcdBufferNumber(str)}
 
 // Optional function to write buffer to display - comment if not used
-#define displayDraw()		bc_module_lcd_update()
+#define displayDraw()		twr_module_lcd_update()
 
 #define BTN_UP 1
 #define BTN_DOWN 2

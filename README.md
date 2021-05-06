@@ -2,7 +2,7 @@
 
 # LoRa Tester with LCD Module, GPS for TTN Mapper
 
-[![Travis](https://img.shields.io/travis/bigclownprojects/bcf-lora-tester-lcd-gps-ttnmapper/master.svg)](https://travis-ci.org/bigclownprojects/bcf-lora-tester-lcd-gps-ttnmapper)
+[![Travis](https://travis-ci.org/hardwario/twr-lora-tester-lcd-gps-ttnmapper.svg?branch=master)](https://travis-ci.org/hardwario/twr-lora-tester-lcd-gps-ttnmapper)
 [![Release](https://img.shields.io/github/release/bigclownprojects/bcf-lora-tester-lcd-gps-ttnmapper.svg)](https://github.com/bigclownprojects/bcf-lora-tester-lcd-gps-ttnmapper/releases)
 [![License](https://img.shields.io/github/license/bigclownprojects/bcf-lora-tester-lcd-gps-ttnmapper.svg)](https://github.com/bigclownprojects/bcf-lora-tester-lcd-gps-ttnmapper/blob/master/LICENSE)
 [![Twitter](https://img.shields.io/twitter/follow/hardwario_en.svg?style=social&label=Follow)](https://twitter.com/hardwario_en)

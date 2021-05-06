@@ -53,7 +53,7 @@ struct SMenu {
 	int menuTopPos;
 
     int len;
-    bc_tick_t refreshTimer;
+    twr_tick_t refreshTimer;
 
     void (*callback)(Menu*, MenuItem*);
 

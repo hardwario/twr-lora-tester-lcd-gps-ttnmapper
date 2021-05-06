@@ -4,28 +4,28 @@
 #include "at.h"
 
 // LED instance
-bc_led_t led;
+twr_led_t led;
 
 // Button instance
-bc_button_t button;
+twr_button_t button;
 
-bc_button_t button_left;
-bc_button_t button_right;
+twr_button_t button_left;
+twr_button_t button_right;
 
 // Lora instance
-bc_cmwx1zzabz_t lora;
+twr_cmwx1zzabz_t lora;
 
 // Thermometer instance
-bc_tmp112_t tmp112;
+twr_tmp112_t tmp112;
 
 // GPS
-bc_module_gps_time_t gps_time;
-bc_module_gps_position_t gps_position;
-bc_module_gps_altitude_t gps_altitude;
-bc_module_gps_quality_t gps_quality;
+twr_module_gps_time_t gps_time;
+twr_module_gps_position_t gps_position;
+twr_module_gps_altitude_t gps_altitude;
+twr_module_gps_quality_t gps_quality;
 
-bc_led_t gps_led_r;
-bc_led_t gps_led_g;
+twr_led_t gps_led_r;
+twr_led_t gps_led_g;
 
 float temperature;
 
@@ -69,8 +69,8 @@ int app_state = 0;
 
 int lora_packet_counter = 0;
 
-bc_tick_t task_tx_period_delay = 0;
-bc_scheduler_task_id_t task_tx_period_id;
+twr_tick_t task_tx_period_delay = 0;
+twr_scheduler_task_id_t task_tx_period_id;
 
 Menu menu_tx_data;
 Menu menu_tx_period;
@@ -166,14 +166,14 @@ Menu menu_tx_period = {
 
 void lcdBufferString(char *str, int x, int y)
 {
-    bc_module_lcd_draw_string(x, y, str, 1);
+    twr_module_lcd_draw_string(x, y, str, 1);
 }
 
 void lcdBufferNumber(int number, int x, int y)
 {
     char str[16];
     snprintf(str, sizeof(str), "%d", number);
-    bc_module_lcd_draw_string(x, y, str, 1);
+    twr_module_lcd_draw_string(x, y, str, 1);
 }
 
 void menu_main_callback(Menu *menu, MenuItem *item)
@@ -185,21 +185,21 @@ void menu_main_callback(Menu *menu, MenuItem *item)
 
     else if (item == &m_item_lora_mode)
     {
-        if (bc_cmwx1zzabz_get_mode(&lora) == BC_CMWX1ZZABZ_CONFIG_MODE_ABP)
+        if (twr_cmwx1zzabz_get_mode(&lora) == TWR_CMWX1ZZABZ_CONFIG_MODE_ABP)
         {
-            bc_cmwx1zzabz_set_mode(&lora, BC_CMWX1ZZABZ_CONFIG_MODE_OTAA);
+            twr_cmwx1zzabz_set_mode(&lora, TWR_CMWX1ZZABZ_CONFIG_MODE_OTAA);
             strcpy(m_lora_mode_str, "OTAA");
         }
         else
         {
-            bc_cmwx1zzabz_set_mode(&lora, BC_CMWX1ZZABZ_CONFIG_MODE_ABP);
+            twr_cmwx1zzabz_set_mode(&lora, TWR_CMWX1ZZABZ_CONFIG_MODE_ABP);
             strcpy(m_lora_mode_str, "ABP");
         }
     }
 
     else if (item == &m_item_join)
     {
-        bc_cmwx1zzabz_join(&lora);
+        twr_cmwx1zzabz_join(&lora);
         strcpy(m_lora_join_str, "Joining...");
     }
 
@@ -215,7 +215,7 @@ void menu_main_callback(Menu *menu, MenuItem *item)
         {
             lora_port = 0;
         }
-        bc_cmwx1zzabz_set_port(&lora, lora_port);
+        twr_cmwx1zzabz_set_port(&lora, lora_port);
     }
 
     else if (item == &m_item_confirmed_chk)
@@ -225,17 +225,17 @@ void menu_main_callback(Menu *menu, MenuItem *item)
 
     else if (item == &m_item_nwk)
     {
-        uint8_t public = bc_cmwx1zzabz_get_nwk_public(&lora);
-        bc_cmwx1zzabz_set_nwk_public(&lora, public ? 0 : 1);
+        uint8_t public = twr_cmwx1zzabz_get_nwk_public(&lora);
+        twr_cmwx1zzabz_set_nwk_public(&lora, public ? 0 : 1);
     }
 
     else if (item == &m_item_class)
     {
-        bc_cmwx1zzabz_config_class_t class = bc_cmwx1zzabz_get_class(&lora);
-        bc_cmwx1zzabz_set_class(&lora, (class == BC_CMWX1ZZABZ_CONFIG_CLASS_A) ? BC_CMWX1ZZABZ_CONFIG_CLASS_C : BC_CMWX1ZZABZ_CONFIG_CLASS_A);
+        twr_cmwx1zzabz_config_class_t class = twr_cmwx1zzabz_get_class(&lora);
+        twr_cmwx1zzabz_set_class(&lora, (class == TWR_CMWX1ZZABZ_CONFIG_CLASS_A) ? TWR_CMWX1ZZABZ_CONFIG_CLASS_C : TWR_CMWX1ZZABZ_CONFIG_CLASS_A);
 
-        class = bc_cmwx1zzabz_get_class(&lora);
-        sleep_class_c = class == BC_CMWX1ZZABZ_CONFIG_CLASS_C;
+        class = twr_cmwx1zzabz_get_class(&lora);
+        sleep_class_c = class == TWR_CMWX1ZZABZ_CONFIG_CLASS_C;
     }
 
     else if (item == &m_item_received)
@@ -264,56 +264,56 @@ void menu_period_callback(Menu *menu, MenuItem *item)
 {
     task_tx_period_delay = (int)item->parameter;
     strncpy(m_lora_tx_period_str, item->text[0], sizeof(m_lora_tx_period_str));
-    bc_scheduler_plan_relative(task_tx_period_id, task_tx_period_delay ? task_tx_period_delay : BC_TICK_INFINITY);
+    twr_scheduler_plan_relative(task_tx_period_id, task_tx_period_delay ? task_tx_period_delay : TWR_TICK_INFINITY);
 }
 
 void menu_band_callback(Menu *menu, MenuItem *item)
 {
     int band = (int)item->parameter;
     strncpy(m_lora_band_str, item->text[0], sizeof(m_lora_band_str));
-    bc_cmwx1zzabz_set_band(&lora, band);
+    twr_cmwx1zzabz_set_band(&lora, band);
 }
 
 void menu_datarate_callback(Menu *menu, MenuItem *item)
 {
     int datarate = (int)item->parameter;
     strncpy(m_lora_datarate_str, item->text[0], sizeof(m_lora_datarate_str));
-    bc_cmwx1zzabz_set_datarate(&lora, datarate);
+    twr_cmwx1zzabz_set_datarate(&lora, datarate);
 }
 
 void sleep()
 {
-    bc_cmwx1zzabz_set_class(&lora, BC_CMWX1ZZABZ_CONFIG_CLASS_A);
-    bc_module_gps_stop();
-    bc_module_lcd_clear();
-    bc_module_lcd_update();
+    twr_cmwx1zzabz_set_class(&lora, TWR_CMWX1ZZABZ_CONFIG_CLASS_A);
+    twr_module_gps_stop();
+    twr_module_lcd_clear();
+    twr_module_lcd_update();
     sleep_active = true;
     // Disable applicatin_task
-    bc_scheduler_plan_absolute(0, BC_TICK_INFINITY);
+    twr_scheduler_plan_absolute(0, TWR_TICK_INFINITY);
 }
 
 void wakeup()
 {
     if (sleep_class_c)
     {
-        bc_cmwx1zzabz_set_class(&lora, BC_CMWX1ZZABZ_CONFIG_CLASS_C);
+        twr_cmwx1zzabz_set_class(&lora, TWR_CMWX1ZZABZ_CONFIG_CLASS_C);
     }
     if (sleep_gps)
     {
-        bc_module_gps_start();
+        twr_module_gps_start();
     }
     app_state = 0;
     sleep_active = false;
-    bc_scheduler_plan_now(0);
+    twr_scheduler_plan_now(0);
 }
 
-void button_event_handler(bc_button_t *self, bc_button_event_t event, void *event_param)
+void button_event_handler(twr_button_t *self, twr_button_event_t event, void *event_param)
 {
     (void) self;
 
     if (sleep_active)
     {
-        if (self == &button_left && event == BC_BUTTON_EVENT_HOLD)
+        if (self == &button_left && event == TWR_BUTTON_EVENT_HOLD)
         {
             wakeup();
         }
@@ -323,10 +323,10 @@ void button_event_handler(bc_button_t *self, bc_button_event_t event, void *even
         }
     }
 
-    bc_scheduler_plan_now(0);
+    twr_scheduler_plan_now(0);
 
     // Any event returns from GPS screen to menu
-    if (app_state == 1 && (event == BC_BUTTON_EVENT_CLICK || event == BC_BUTTON_EVENT_HOLD))
+    if (app_state == 1 && (event == TWR_BUTTON_EVENT_CLICK || event == TWR_BUTTON_EVENT_HOLD))
     {
         app_state = 0;
         return;
@@ -334,19 +334,19 @@ void button_event_handler(bc_button_t *self, bc_button_event_t event, void *even
 
     if (app_state == 0)
     {
-        if (self == &button_left && event == BC_BUTTON_EVENT_CLICK)
+        if (self == &button_left && event == TWR_BUTTON_EVENT_CLICK)
         {
             menu2_event(&menu_main, BTN_UP);
         }
-        if (self == &button_left && event == BC_BUTTON_EVENT_HOLD)
+        if (self == &button_left && event == TWR_BUTTON_EVENT_HOLD)
         {
             menu2_event(&menu_main, BTN_LEFT);
         }
-        else if (self == &button_right && event == BC_BUTTON_EVENT_CLICK)
+        else if (self == &button_right && event == TWR_BUTTON_EVENT_CLICK)
         {
             menu2_event(&menu_main, BTN_DOWN);
         }
-        else if (self == &button_right && event == BC_BUTTON_EVENT_HOLD)
+        else if (self == &button_right && event == TWR_BUTTON_EVENT_HOLD)
         {
             menu2_event(&menu_main, BTN_ENTER);
         }
@@ -357,7 +357,7 @@ void button_event_handler(bc_button_t *self, bc_button_event_t event, void *even
 
 void lora_ready_params_udpate()
 {
-    bc_cmwx1zzabz_config_band_t band = bc_cmwx1zzabz_get_band(&lora);
+    twr_cmwx1zzabz_config_band_t band = twr_cmwx1zzabz_get_band(&lora);
     if (band > 1)
     {
         // skip 3 unused bands
@@ -365,47 +365,47 @@ void lora_ready_params_udpate()
     }
     strncpy(m_lora_band_str, menu_band.items[band]->text[0], sizeof(m_lora_band_str));
 
-    uint8_t public = bc_cmwx1zzabz_get_nwk_public(&lora);
+    uint8_t public = twr_cmwx1zzabz_get_nwk_public(&lora);
     strncpy(m_lora_nwk_str, public ? "public" : "private", sizeof(m_lora_nwk_str));
 
-    bc_cmwx1zzabz_config_class_t class = bc_cmwx1zzabz_get_class(&lora);
-    strncpy(m_lora_class_str, (class == BC_CMWX1ZZABZ_CONFIG_CLASS_A) ? "A" : "C", sizeof(m_lora_class_str));
+    twr_cmwx1zzabz_config_class_t class = twr_cmwx1zzabz_get_class(&lora);
+    strncpy(m_lora_class_str, (class == TWR_CMWX1ZZABZ_CONFIG_CLASS_A) ? "A" : "C", sizeof(m_lora_class_str));
 
-    int datarate = bc_cmwx1zzabz_get_datarate(&lora);
+    int datarate = twr_cmwx1zzabz_get_datarate(&lora);
     strcpy(m_lora_datarate_str, menu_datarate.items[datarate]->text[0]);
 
 }
 
 
 
-void lora_callback(bc_cmwx1zzabz_t *self, bc_cmwx1zzabz_event_t event, void *event_param)
+void lora_callback(twr_cmwx1zzabz_t *self, twr_cmwx1zzabz_event_t event, void *event_param)
 {
-    if (event == BC_CMWX1ZZABZ_EVENT_ERROR)
+    if (event == TWR_CMWX1ZZABZ_EVENT_ERROR)
     {
-        bc_led_set_mode(&led, BC_LED_MODE_BLINK_FAST);
+        twr_led_set_mode(&led, TWR_LED_MODE_BLINK_FAST);
         strcpy(m_lora_send_str, "ERR");
     }
-    else if (event == BC_CMWX1ZZABZ_EVENT_SEND_MESSAGE_START)
+    else if (event == TWR_CMWX1ZZABZ_EVENT_SEND_MESSAGE_START)
     {
-        bc_led_set_mode(&led, BC_LED_MODE_ON);
+        twr_led_set_mode(&led, TWR_LED_MODE_ON);
         strcpy(m_lora_send_str, "SENDING..");
     }
-    else if (event == BC_CMWX1ZZABZ_EVENT_SEND_MESSAGE_DONE)
+    else if (event == TWR_CMWX1ZZABZ_EVENT_SEND_MESSAGE_DONE)
     {
-        bc_led_set_mode(&led, BC_LED_MODE_OFF);
+        twr_led_set_mode(&led, TWR_LED_MODE_OFF);
         strcpy(m_lora_send_str, "SENT");
     }
-    else if (event == BC_CMWX1ZZABZ_EVENT_MESSAGE_CONFIRMED)
+    else if (event == TWR_CMWX1ZZABZ_EVENT_MESSAGE_CONFIRMED)
     {
         strcpy(m_lora_send_str, "ACK");
     }
-    else if (event == BC_CMWX1ZZABZ_EVENT_MESSAGE_NOT_CONFIRMED)
+    else if (event == TWR_CMWX1ZZABZ_EVENT_MESSAGE_NOT_CONFIRMED)
     {
         strcpy(m_lora_send_str, "NACK");
     }
-    else if (event == BC_CMWX1ZZABZ_EVENT_READY)
+    else if (event == TWR_CMWX1ZZABZ_EVENT_READY)
     {
-        bc_led_set_mode(&led, BC_LED_MODE_OFF);
+        twr_led_set_mode(&led, TWR_LED_MODE_OFF);
 
         static bool ready_flag = false;
 
@@ -417,22 +417,22 @@ void lora_callback(bc_cmwx1zzabz_t *self, bc_cmwx1zzabz_event_t event, void *eve
 
         lora_ready_params_udpate();
     }
-    else if (event == BC_CMWX1ZZABZ_EVENT_JOIN_SUCCESS)
+    else if (event == TWR_CMWX1ZZABZ_EVENT_JOIN_SUCCESS)
     {
-        bc_atci_printf("$JOIN_OK");
+        twr_atci_printf("$JOIN_OK");
         strcpy(m_lora_join_str, "JOINED");
     }
-    else if (event == BC_CMWX1ZZABZ_EVENT_JOIN_ERROR)
+    else if (event == TWR_CMWX1ZZABZ_EVENT_JOIN_ERROR)
     {
-        bc_atci_printf("$JOIN_ERROR");
+        twr_atci_printf("$JOIN_ERROR");
         strcpy(m_lora_join_str, "ERROR");
     }
-    else if (event == BC_CMWX1ZZABZ_EVENT_MESSAGE_RECEIVED)
+    else if (event == TWR_CMWX1ZZABZ_EVENT_MESSAGE_RECEIVED)
     {
         lora_received++;
         char hex[3];
         uint8_t buffer[60];
-        uint8_t len = bc_cmwx1zzabz_get_received_message_data(&lora, buffer, sizeof(buffer));
+        uint8_t len = twr_cmwx1zzabz_get_received_message_data(&lora, buffer, sizeof(buffer));
         m_lora_received_str[0] = '\0';
         for (int i = 0; i < len; i++)
         {
@@ -488,11 +488,11 @@ bool at_send(void)
 
     if (lora_send_confimed_message)
     {
-        bc_cmwx1zzabz_send_message_confirmed(&lora, buffer, len);
+        twr_cmwx1zzabz_send_message_confirmed(&lora, buffer, len);
     }
     else
     {
-        bc_cmwx1zzabz_send_message(&lora, buffer, len);
+        twr_cmwx1zzabz_send_message(&lora, buffer, len);
     }
 
 
@@ -501,65 +501,65 @@ bool at_send(void)
 
 bool at_status(void)
 {
-    bc_atci_printf("$STATUS: OK");
+    twr_atci_printf("$STATUS: OK");
     return true;
 }
 
-void tmp112_event_handler(bc_tmp112_t *self, bc_tmp112_event_t event, void *event_param)
+void tmp112_event_handler(twr_tmp112_t *self, twr_tmp112_event_t event, void *event_param)
 {
-    if (event == BC_TMP112_EVENT_UPDATE)
+    if (event == TWR_TMP112_EVENT_UPDATE)
     {
-        bc_tmp112_get_temperature_celsius(self, &temperature);
+        twr_tmp112_get_temperature_celsius(self, &temperature);
     }
 }
 
 
-void gps_module_event_handler(bc_module_gps_event_t event, void *event_param)
+void gps_module_event_handler(twr_module_gps_event_t event, void *event_param)
 {
-    if (event == BC_MODULE_GPS_EVENT_START)
+    if (event == TWR_MODULE_GPS_EVENT_START)
     {
-        bc_led_set_mode(&gps_led_g, BC_LED_MODE_ON);
+        twr_led_set_mode(&gps_led_g, TWR_LED_MODE_ON);
     }
-    else if (event == BC_MODULE_GPS_EVENT_STOP)
+    else if (event == TWR_MODULE_GPS_EVENT_STOP)
     {
-        bc_led_set_mode(&gps_led_g, BC_LED_MODE_OFF);
+        twr_led_set_mode(&gps_led_g, TWR_LED_MODE_OFF);
     }
-    else if (event == BC_MODULE_GPS_EVENT_UPDATE)
+    else if (event == TWR_MODULE_GPS_EVENT_UPDATE)
     {
-        bc_led_pulse(&gps_led_r, 50);
+        twr_led_pulse(&gps_led_r, 50);
 
-        if (bc_module_gps_get_time(&gps_time))
+        if (twr_module_gps_get_time(&gps_time))
         {
         }
 
-        if (bc_module_gps_get_position(&gps_position))
+        if (twr_module_gps_get_position(&gps_position))
         {
         }
 
-        if (bc_module_gps_get_altitude(&gps_altitude))
+        if (twr_module_gps_get_altitude(&gps_altitude))
         {
 
         }
 
-        if (bc_module_gps_get_quality(&gps_quality))
+        if (twr_module_gps_get_quality(&gps_quality))
         {
         }
 
         snprintf(m_lora_gps_info_str, sizeof(m_lora_gps_info_str), "%03.1f,%03.1f", gps_position.latitude, gps_position.longitude);
 
-        bc_module_gps_invalidate();
+        twr_module_gps_invalidate();
     }
 }
 
-void battery_event_handler(bc_module_battery_event_t event, void *event_param)
+void battery_event_handler(twr_module_battery_event_t event, void *event_param)
 {
     (void) event_param;
 
     float voltage;
 
-    if (event == BC_MODULE_BATTERY_EVENT_UPDATE)
+    if (event == TWR_MODULE_BATTERY_EVENT_UPDATE)
     {
-        if (bc_module_battery_get_voltage(&voltage))
+        if (twr_module_battery_get_voltage(&voltage))
         {
             snprintf(m_battery_str, sizeof(m_battery_str), "%02.1f V", voltage);
         }
@@ -571,91 +571,91 @@ void task_tx_periodic(void *param)
 {
     (void) param;
 
-    bc_led_pulse(&led, 500);
+    twr_led_pulse(&led, 500);
 
     at_send();
 
     if (task_tx_period_delay)
     {
-        bc_scheduler_plan_current_relative(task_tx_period_delay);
+        twr_scheduler_plan_current_relative(task_tx_period_delay);
     }
 }
 
 void application_init(void)
 {
     // Initialize logging
-    bc_log_init(BC_LOG_LEVEL_DUMP, BC_LOG_TIMESTAMP_ABS);
+    twr_log_init(TWR_LOG_LEVEL_DUMP, TWR_LOG_TIMESTAMP_ABS);
 
     // Initialize LED
-    bc_led_init(&led, BC_GPIO_LED, false, false);
-    bc_led_set_mode(&led, BC_LED_MODE_ON);
+    twr_led_init(&led, TWR_GPIO_LED, false, false);
+    twr_led_set_mode(&led, TWR_LED_MODE_ON);
 
     // Initialize button
-    bc_button_init(&button, BC_GPIO_BUTTON, BC_GPIO_PULL_DOWN, false);
-    bc_button_set_event_handler(&button, button_event_handler, NULL);
+    twr_button_init(&button, TWR_GPIO_BUTTON, TWR_GPIO_PULL_DOWN, false);
+    twr_button_set_event_handler(&button, button_event_handler, NULL);
 
     // Initialize battery
-    bc_module_battery_init();
-    bc_module_battery_set_event_handler(battery_event_handler, NULL);
-    bc_module_battery_set_update_interval(5 * 60 * 1000);
+    twr_module_battery_init();
+    twr_module_battery_set_event_handler(battery_event_handler, NULL);
+    twr_module_battery_set_update_interval(5 * 60 * 1000);
 
     // Initialize thermometer
-    bc_tmp112_init(&tmp112, BC_I2C_I2C0, 0x49);
-    bc_tmp112_set_event_handler(&tmp112, tmp112_event_handler, NULL);
-    bc_tmp112_set_update_interval(&tmp112, 10000);
+    twr_tmp112_init(&tmp112, TWR_I2C_I2C0, 0x49);
+    twr_tmp112_set_event_handler(&tmp112, tmp112_event_handler, NULL);
+    twr_tmp112_set_update_interval(&tmp112, 10000);
 
-    if (!bc_module_gps_init())
+    if (!twr_module_gps_init())
     {
-        bc_log_error("APP: GPS Module initialization failed");
+        twr_log_error("APP: GPS Module initialization failed");
         strncpy(m_lora_gps_info_str, "Not detected",sizeof(m_lora_gps_info_str));
     }
     else
     {
-        bc_module_gps_set_event_handler(gps_module_event_handler, NULL);
-        bc_module_gps_start();
+        twr_module_gps_set_event_handler(gps_module_event_handler, NULL);
+        twr_module_gps_start();
         sleep_gps = true;
     }
 
-    bc_led_init_virtual(&gps_led_r, BC_MODULE_GPS_LED_RED, bc_module_gps_get_led_driver(), 0);
-    bc_led_init_virtual(&gps_led_g, BC_MODULE_GPS_LED_GREEN, bc_module_gps_get_led_driver(), 0);
+    twr_led_init_virtual(&gps_led_r, TWR_MODULE_GPS_LED_RED, twr_module_gps_get_led_driver(), 0);
+    twr_led_init_virtual(&gps_led_g, TWR_MODULE_GPS_LED_GREEN, twr_module_gps_get_led_driver(), 0);
 
     // Init LCD
-    bc_module_lcd_init();
-    bc_module_lcd_set_font(&bc_font_ubuntu_13);
-    bc_module_lcd_update();
+    twr_module_lcd_init();
+    twr_module_lcd_set_font(&twr_font_ubuntu_13);
+    twr_module_lcd_update();
 
     // Initialize lora module
-    bc_cmwx1zzabz_init(&lora, BC_UART_UART1);
-    bc_cmwx1zzabz_set_event_handler(&lora, lora_callback, NULL);
-    bc_cmwx1zzabz_set_mode(&lora, BC_CMWX1ZZABZ_CONFIG_MODE_ABP);
-    bc_cmwx1zzabz_set_class(&lora, BC_CMWX1ZZABZ_CONFIG_CLASS_A);
+    twr_cmwx1zzabz_init(&lora, TWR_UART_UART1);
+    twr_cmwx1zzabz_set_event_handler(&lora, lora_callback, NULL);
+    twr_cmwx1zzabz_set_mode(&lora, TWR_CMWX1ZZABZ_CONFIG_MODE_ABP);
+    twr_cmwx1zzabz_set_class(&lora, TWR_CMWX1ZZABZ_CONFIG_CLASS_A);
 
     // Initialize AT command interface
     at_init(&led, &lora);
-    static const bc_atci_command_t commands[] = {
+    static const twr_atci_command_t commands[] = {
             AT_LORA_COMMANDS,
             {"$SEND", at_send, NULL, NULL, NULL, "Immediately send packet"},
             {"$STATUS", at_status, NULL, NULL, NULL, "Show status"},
             AT_LED_COMMANDS,
-            BC_ATCI_COMMAND_CLAC,
-            BC_ATCI_COMMAND_HELP
+            TWR_ATCI_COMMAND_CLAC,
+            TWR_ATCI_COMMAND_HELP
     };
-    bc_atci_init(commands, BC_ATCI_COMMANDS_LENGTH(commands));
+    twr_atci_init(commands, TWR_ATCI_COMMANDS_LENGTH(commands));
 
-    const bc_button_driver_t* lcdButtonDriver =  bc_module_lcd_get_button_driver();
-    bc_button_init_virtual(&button_left, 0, lcdButtonDriver, 0);
-    bc_button_init_virtual(&button_right, 1, lcdButtonDriver, 0);
+    const twr_button_driver_t* lcdButtonDriver =  twr_module_lcd_get_button_driver();
+    twr_button_init_virtual(&button_left, 0, lcdButtonDriver, 0);
+    twr_button_init_virtual(&button_right, 1, lcdButtonDriver, 0);
 
-    bc_button_set_event_handler(&button_left, button_event_handler, (int*)0);
-    bc_button_set_event_handler(&button_right, button_event_handler, (int*)1);
+    twr_button_set_event_handler(&button_left, button_event_handler, (int*)0);
+    twr_button_set_event_handler(&button_right, button_event_handler, (int*)1);
 
-    bc_button_set_hold_time(&button_left, 300);
-    bc_button_set_hold_time(&button_right, 300);
+    twr_button_set_hold_time(&button_left, 300);
+    twr_button_set_hold_time(&button_right, 300);
 
-    bc_button_set_debounce_time(&button_left, 30);
-    bc_button_set_debounce_time(&button_left, 30);
+    twr_button_set_debounce_time(&button_left, 30);
+    twr_button_set_debounce_time(&button_left, 30);
 
-    task_tx_period_id = bc_scheduler_register(task_tx_periodic, 0, BC_TICK_INFINITY);
+    task_tx_period_id = twr_scheduler_register(task_tx_periodic, 0, TWR_TICK_INFINITY);
 
     menu2_init(&menu_main);
     menu2_init(&menu_tx_data);
@@ -666,9 +666,9 @@ void application_init(void)
 
 void application_task(void)
 {
-    if (!bc_module_lcd_is_ready())
+    if (!twr_module_lcd_is_ready())
     {
-        bc_scheduler_plan_current_relative(20);
+        twr_scheduler_plan_current_relative(20);
         return;
     }
 
@@ -677,7 +677,7 @@ void application_task(void)
         return;
     }
 
-    bc_system_pll_enable();
+    twr_system_pll_enable();
 
     switch (app_state)
     {
@@ -690,27 +690,27 @@ void application_task(void)
         case 1:
         {
             char gps_buffer[30];
-            bc_module_lcd_clear();
+            twr_module_lcd_clear();
 
             snprintf(gps_buffer, sizeof(gps_buffer), "Date: %04d-%02d-%02d", gps_time.year, gps_time.month, gps_time.day);
-            bc_module_lcd_draw_string(0, 0, gps_buffer, 1);
+            twr_module_lcd_draw_string(0, 0, gps_buffer, 1);
 
             snprintf(gps_buffer, sizeof(gps_buffer), "Time: %02d:%02d:%02d", gps_time.hours, gps_time.minutes, gps_time.seconds);
-            bc_module_lcd_draw_string(0, 13, gps_buffer, 1);
+            twr_module_lcd_draw_string(0, 13, gps_buffer, 1);
 
             snprintf(gps_buffer, sizeof(gps_buffer), "Lat: %03.5f", gps_position.latitude);
-            bc_module_lcd_draw_string(0, 26, gps_buffer, 1);
+            twr_module_lcd_draw_string(0, 26, gps_buffer, 1);
 
             snprintf(gps_buffer, sizeof(gps_buffer),"Lon: %03.5f", gps_position.longitude);
-            bc_module_lcd_draw_string(0, 39, gps_buffer, 1);
+            twr_module_lcd_draw_string(0, 39, gps_buffer, 1);
 
             snprintf(gps_buffer, sizeof(gps_buffer),"Fix quality: %d", gps_quality.fix_quality);
-            bc_module_lcd_draw_string(0, 52, gps_buffer, 1);
+            twr_module_lcd_draw_string(0, 52, gps_buffer, 1);
 
             snprintf(gps_buffer, sizeof(gps_buffer),"Satellites: %d", gps_quality.satellites_tracked);
-            bc_module_lcd_draw_string(0, 65, gps_buffer, 1);
+            twr_module_lcd_draw_string(0, 65, gps_buffer, 1);
 
-            bc_module_lcd_update();
+            twr_module_lcd_update();
             break;
         }
 
@@ -720,8 +720,8 @@ void application_task(void)
         }
     }
 
-    bc_system_pll_disable();
+    twr_system_pll_disable();
 
-    bc_scheduler_plan_current_relative(200);
+    twr_scheduler_plan_current_relative(200);
 
 }
