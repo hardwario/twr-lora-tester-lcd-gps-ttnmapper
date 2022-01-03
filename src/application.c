@@ -87,6 +87,7 @@ MenuItem m_item_confirmed_chk = {{"Confirmation"}, NULL,  MENU_ITEM_IS_CHECKBOX 
 MenuItem m_item_port = {{"Port"}, NULL,  MENU_PARAMETER_IS_NUMBER , (void*)&lora_port};
 MenuItem m_item_band = {{"Band"}, &menu_band,  MENU_PARAMETER_IS_STRING , (void*)&m_lora_band_str};
 MenuItem m_item_datarate = {{"Datarate"}, &menu_datarate,  MENU_PARAMETER_IS_STRING , (void*)&m_lora_datarate_str};
+MenuItem m_item_adr = {{"ADR"}, NULL,  MENU_ITEM_IS_CHECKBOX , 0};
 MenuItem m_item_nwk = {{"Network"}, NULL,  MENU_PARAMETER_IS_STRING, (void*)&m_lora_nwk_str};
 MenuItem m_item_class = {{"Class"}, NULL,  MENU_PARAMETER_IS_STRING, (void*)&m_lora_class_str};
 MenuItem m_item_received = {{"Received"}, NULL,  MENU_PARAMETER_IS_NUMBER, (void*)&lora_received};
@@ -97,7 +98,7 @@ MenuItem m_item_sleep = {{"Sleep"}, NULL, NULL, NULL};
 
 Menu menu_main = {
     {"HARDWARIO LoRa v1.0"},
-    .items = {&m_item_send, &m_item_tx_data, &m_item_tx_period, &m_item_gps_info, &m_item_lora_mode, &m_item_join, &m_item_confirmed_chk, &m_item_port, &m_item_band, &m_item_datarate, &m_item_nwk, &m_item_class, &m_item_received, &m_item_rx_data, &m_item_battery, &m_item_sleep, 0},
+    .items = {&m_item_send, &m_item_tx_data, &m_item_tx_period, &m_item_gps_info, &m_item_lora_mode, &m_item_join, &m_item_confirmed_chk, &m_item_port, &m_item_band, &m_item_datarate, &m_item_adr, &m_item_nwk, &m_item_class, &m_item_received, &m_item_rx_data, &m_item_battery, &m_item_sleep, 0},
     .refresh = 200,
     .callback = menu_main_callback
 };
@@ -221,6 +222,12 @@ void menu_main_callback(Menu *menu, MenuItem *item)
     else if (item == &m_item_confirmed_chk)
     {
         lora_send_confimed_message = (item->flags & MENU_ITEM_IS_CHECKED) ? true : false;
+    }
+
+    else if (item == &m_item_adr)
+    {
+        int adr = (item->flags & MENU_ITEM_IS_CHECKED) ? 1 : 0;
+        twr_cmwx1zzabz_set_adaptive_datarate(&lora, adr);
     }
 
     else if (item == &m_item_nwk)
@@ -374,6 +381,8 @@ void lora_ready_params_udpate()
     int datarate = twr_cmwx1zzabz_get_datarate(&lora);
     strcpy(m_lora_datarate_str, menu_datarate.items[datarate]->text[0]);
 
+    int adr = twr_cmwx1zzabz_get_adaptive_datarate(&lora);
+    if (adr) m_item_adr.flags |= MENU_ITEM_IS_CHECKED;
 }
 
 
