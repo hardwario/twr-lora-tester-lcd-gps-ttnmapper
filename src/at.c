@@ -254,6 +254,31 @@ bool at_led_help(void)
     return true;
 }
 
+bool at_adr_read(void)
+{
+    uint8_t adr = twr_cmwx1zzabz_get_adaptive_datarate(_at.lora);
+
+    twr_atci_printfln("$ADR: %d", adr);
+
+    return true;
+}
+
+bool at_adr_set(twr_atci_param_t *param)
+{
+    uint8_t adr = atoi(param->txt);
+
+    if (adr > 1)
+    {
+        return false;
+    }
+
+    twr_cmwx1zzabz_set_adaptive_datarate(_at.lora, adr);
+
+    return true;
+}
+
+
+
 static bool _at_param_eui_test(twr_atci_param_t *param)
 {
     if (param->length != 16)
