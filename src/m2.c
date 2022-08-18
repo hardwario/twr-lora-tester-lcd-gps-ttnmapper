@@ -15,6 +15,8 @@
 
 int keyPress = 0;
 
+unsigned char menuLanguage;
+
 int menu2_init(Menu *menu)
 {
     //

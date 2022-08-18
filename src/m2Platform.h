@@ -18,8 +18,6 @@
 #define LANGUAGE_CZECH 0
 #define LANGUAGE_ENGLISH 1
 
-unsigned char menuLanguage;
-
 // Set rows/cols based on your font (for graphical displays)
 #define ROW(x) ((x)*13)
 #define COL(y) ((y)*6)
